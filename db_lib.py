@@ -24,22 +24,22 @@ class DatabaseConnection():
 	def __init__(self, host):
 		self.db_cred = DatabaseCredentials(host)
 
-	def get_all_outbox_sms_from_db(self, table, send_status, gsm_id):
-		if not table:
-			raise ValueError("No table definition")
-
+	def get_all_outbox_sms_users_from_db(self, send_status, gsm_id):
 		while True:
 			try:
 				db, cur = self.db_connect(
 					self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
-				query = ("select t1.stat_id,t1.mobile_id,t1.gsm_id,t1.outbox_id,"
-						 "t2.sms_msg from "
-						 "smsoutbox_%s_status as t1 "
-						 "inner join (select * from smsoutbox_%s) as t2 "
-						 "on t1.outbox_id = t2.outbox_id "
-						 "where t1.send_status < %d "
-						 "and t1.send_status >= 0 and t1.send_status < 6 "
-						 "and t1.gsm_id = %d LIMIT 100") % (table[:-1], table, send_status, gsm_id)
+				query = ("SELECT user_id, mobile_id, outbox_id, stat_id, sim_num, firstname, lastname, sms_msg FROM smsoutbox_user_status "
+						"INNER JOIN smsoutbox_users USING (outbox_id) "
+						"INNER JOIN user_mobiles USING (mobile_id) "
+						"INNER JOIN mobile_numbers USING (mobile_id) " 
+						"INNER JOIN users USING (user_id) WHERE "
+						"send_status < %d "
+						"AND send_status >= 0 "
+						"AND send_status < 6 "
+						"AND smsoutbox_user_status.gsm_id = %d "
+						"LIMIT 100") % (send_status, gsm_id)
+
 				a = cur.execute(query)
 				out = []
 				if a:
@@ -48,7 +48,7 @@ class DatabaseConnection():
 				return out
 
 			except MySQLdb.OperationalError:
-				print('10.')
+				print("** MySQL Error occurred. Sleeping for 10 seconds.")
 				time.sleep(20)
 
 	def get_all_logger_mobile(self, sim_num):

@@ -200,7 +200,6 @@ if __name__ == "__main__":
 		print(">> Error: initializing default settings.")
 
 	try:
-		pprint(vars(args))
 		if args.table == "loggers":
 			sms_mode = loggers.LoggerSMS()
 		elif args.table == "users":
@@ -213,7 +212,7 @@ if __name__ == "__main__":
 		print(">> ",e," error occurred. Exiting...")
 
 	try:
-		sms_mode.start_server(initialize_gsm_modules, gsm_info)
+		sms_mode.start_server(initialize_gsm_modules, gsm_info, db, args.gsm_id)
 	except Exception as e:
 		print(">> ",e,"error occurred. Exiting...")
 

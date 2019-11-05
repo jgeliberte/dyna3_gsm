@@ -111,7 +111,6 @@ class GsmModem:
         msglist = []
         tpdu_header = 0
         multi_sms_construct = ""
-        print(">> Fetching inbox...")
         for msg in allmsgs:
             try:
                 pdu = re.search(r'[0-9A-F]{20,}', msg).group(0)
@@ -181,9 +180,7 @@ class GsmModem:
             a = ''
             now = time.time()
             temp_pdu = self.formatPDUtoSIM800(str(pdu))
-            print("-----")
             preamble = "AT+CMGS="+str(pdu.tpduLength)
-            print(preamble)
             self.gsm.write(str.encode(preamble+"\r"))
             now = time.time()
             while (a.find('>') < 0 and a.find("ERROR") < 0 and
@@ -203,7 +200,6 @@ class GsmModem:
             a = ''
             now = time.time()
             self.gsm.write(str.encode(str(temp_pdu)+chr(26)))
-            print(str.encode(str(temp_pdu)+chr(26)))
             while (a.find('OK') < 0 and a.find("ERROR") < 0 and
                    time.time() < now + int(self.defaults['GSM_DEFAULT_SETTINGS']['REPLY_TIMEOUT'])):
                 a += self.gsm.read(self.gsm.inWaiting()).decode('utf-8')
