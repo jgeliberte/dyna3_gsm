@@ -9,20 +9,20 @@ import time
 import hashlib
 import psutil
 
-class DatabaseCredentials:
-	def __new__(self):
+class DatabaseCredentials():
+	def __new__(self, host):
 		config = configparser.ConfigParser()
 		config.read('/home/pi/updews-pycodes/gsm/gsmserver_dewsl3/utils/config.cnf')
-		config["CBEWSL_DB_CREDENTIALS"]
+		if host is not None:
+			config["MASTER_DB_CREDENTIALS"]["host"] = host
 		return config
 
-
-class DatabaseConnection:
+class DatabaseConnection():
 
 	db_cred = None
 
-	def __init__(self):
-		self.db_cred = DatabaseCredentials()
+	def __init__(self, host):
+		self.db_cred = DatabaseCredentials(host)
 
 	def get_all_outbox_sms_from_db(self, table, send_status, gsm_id):
 		if not table:
@@ -31,7 +31,7 @@ class DatabaseConnection:
 		while True:
 			try:
 				db, cur = self.db_connect(
-					self.db_cred['CBEWSL_DB_CREDENTIALS']['db_comms'])
+					self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
 				query = ("select t1.stat_id,t1.mobile_id,t1.gsm_id,t1.outbox_id,"
 						 "t2.sms_msg from "
 						 "smsoutbox_%s_status as t1 "
@@ -54,7 +54,7 @@ class DatabaseConnection:
 	def get_all_logger_mobile(self, sim_num):
 		try:
 			db, cur = self.db_connect(
-				self.db_cred['CBEWSL_DB_CREDENTIALS']['db_comms'])
+				self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
 			query = ("SELECT * FROM (SELECT "
 						"t1.mobile_id, t1.sim_num, t1.gsm_id "
 						"FROM "
@@ -81,7 +81,7 @@ class DatabaseConnection:
 	def get_all_user_mobile(self, sim_num, mobile_id_flag=False):
 		try:
 			db, cur = self.db_connect(
-				self.db_cred['CBEWSL_DB_CREDENTIALS']['db_comms'])
+				self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
 			if mobile_id_flag == False:
 				query = "select mobile_id, sim_num, gsm_id from user_mobile where sim_num like '%"+sim_num+"%'"
 			else:
@@ -181,7 +181,7 @@ class DatabaseConnection:
 	def write_to_db(self, query, last_insert_id=False):
 		ret_val = None
 		db, cur = self.db_connect(
-			self.db_cred['CBEWSL_DB_CREDENTIALS']['db_comms'])
+			self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
 
 		try:
 			a = cur.execute(query)
@@ -213,7 +213,7 @@ class DatabaseConnection:
 	def read_db(self, query):
 		try:
 			db, cur = self.db_connect(
-				self.db_cred['CBEWSL_DB_CREDENTIALS']['db_comms'])
+				self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
 			a = cur.execute(query)
 			out = []
 			if a:
@@ -227,9 +227,9 @@ class DatabaseConnection:
 
 	def db_connect(self, schema):
 		try:
-			db = MySQLdb.connect(self.db_cred['CBEWSL_DB_CREDENTIALS']['host'],
-								 self.db_cred['CBEWSL_DB_CREDENTIALS']['user'],
-								 self.db_cred['CBEWSL_DB_CREDENTIALS']['password'], schema)
+			db = MySQLdb.connect(self.db_cred['MASTER_DB_CREDENTIALS']['host'],
+								 self.db_cred['MASTER_DB_CREDENTIALS']['user'],
+								 self.db_cred['MASTER_DB_CREDENTIALS']['password'], schema)
 			cur = db.cursor()
 			return db, cur
 		except TypeError:
@@ -354,7 +354,7 @@ class DatabaseConnection:
 	def execute_commons_db(self, query, last_insert_id = False):
 		try:
 			db, cur = self.db_connect(
-				self.db_cred['CBEWSL_DB_CREDENTIALS']['db_commons'])
+				self.db_cred['MASTER_DB_CREDENTIALS']['db_commons'])
 			a = cur.execute(query)
 			result = []
 			db.commit()
@@ -422,7 +422,7 @@ class DatabaseConnection:
 	def get_user_data(self, sim_num):
 		try:
 			db, cur = self.db_connect(
-				self.db_cred['CBEWSL_DB_CREDENTIALS']['db_comms'])
+				self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
 
 			query = "SELECT users.user_id, account_id, first_name, last_name from commons_db.users" \
 			" INNER JOIN comms_db.user_mobile ON users.user_id = user_mobile.user_id " \
@@ -556,7 +556,7 @@ class DatabaseConnection:
 	def write_raw_to_db(self, query, last_insert_id=False):
 		ret_val = None
 		db, cur = self.db_connect(
-			self.db_cred['CBEWSL_DB_CREDENTIALS']['db_cbewsl_raw'])
+			self.db_cred['MASTER_DB_CREDENTIALS']['db_cbewsl_raw'])
 
 		try:
 			a = cur.execute(query)

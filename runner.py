@@ -10,6 +10,8 @@ import argparse
 import gsm_modules as modem
 import db_lib as dbLib
 import raw_sync_parser as raw_parser
+import loggers
+import users 
 from pprint import pprint
 
 
@@ -20,7 +22,7 @@ class GsmServer:
 			description="Run SMS server [-options]")
 		parser.add_argument("-t", "--table",
 							help="smsinbox table (loggers or users)")
-		parser.add_argument("-n", "--network",
+		parser.add_argument("-db", "--dbhost",
 							help="network name (smart/globe/simulate)")
 		parser.add_argument("-g", "--gsm_id", type=int,
 							help="gsm id (1,2,3...)")
@@ -157,7 +159,11 @@ if __name__ == "__main__":
 	start_time = time.time()
 	initialize_gsm = GsmServer()
 	args = initialize_gsm.get_arguments()
-	db = dbLib.DatabaseConnection()
+	if args.dbhost is not None:
+		dbhost = args.dbhost
+	else:
+		dbhost = None
+	db = dbLib.DatabaseConnection(dbhost)
 	gsm_modules = db.get_gsm_info(args.gsm_id)
 	config = configparser.ConfigParser()
 	config.read('/home/pi/updews-pycodes/gsm/gsmserver_dewsl3/utils/config.cnf')
@@ -180,7 +186,6 @@ if __name__ == "__main__":
 	gsm_info["module"] = gsm_modules[args.gsm_id]['module_type']
 
 	try:
-		pprint(gsm_info)
 		initialize_gsm_modules = modem.GsmModem(gsm_info['port'], gsm_info["baudrate"],
 												gsm_info["pwr_on_pin"], gsm_info["ring_pin"])
 	except serial.SerialException:
@@ -193,12 +198,31 @@ if __name__ == "__main__":
 	except Exception as e:
 		print(e)
 		print(">> Error: initializing default settings.")
+
 	try:
-		initialize_data_parser = raw_parser.Parser()
-		initialize_gsm.run_server(initialize_gsm_modules, initialize_data_parser, gsm_info, 'users')
-	except modem.ResetException:
-		print(">> Resetting system because of GSM failure")
-		initialize_gsm_modules.reset()
-		time.sleep(int(config['GSM_DEFAULT_SETTINGS']['POWER_RESET_DELAY']))
-		initialize_gsm.run_server(initialize_gsm_modules, initialize_data_parser, gsm_info, 'users')
-		sys.exit()
+		pprint(vars(args))
+		if args.table == "loggers":
+			sms_mode = loggers.LoggerSMS()
+		elif args.table == "users":
+			sms_mode = users.UserSMS()
+		else:
+			sms_mode = None
+			print(">> Unknown sms mode. Exiting...")
+			sys.exit()
+	except Exception as e:
+		print(">> ",e," error occurred. Exiting...")
+
+	try:
+		sms_mode.start_server(initialize_gsm_modules, gsm_info)
+	except Exception as e:
+		print(">> ",e,"error occurred. Exiting...")
+
+	# try:
+	# 	initialize_data_parser = raw_parser.Parser()
+	# 	initialize_gsm.run_server(initialize_gsm_modules, initialize_data_parser, gsm_info, 'users')
+	# except modem.ResetException:
+	# 	print(">> Resetting system because of GSM failure")
+	# 	initialize_gsm_modules.reset()
+	# 	time.sleep(int(config['GSM_DEFAULT_SETTINGS']['POWER_RESET_DELAY']))
+	# 	initialize_gsm.run_server(initialize_gsm_modules, initialize_data_parser, gsm_info, 'users')
+	# 	sys.exit()
