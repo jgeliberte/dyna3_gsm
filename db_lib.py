@@ -29,7 +29,7 @@ class DatabaseConnection():
 			try:
 				db, cur = self.db_connect(
 					self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
-				query = ("SELECT user_id, mobile_id, outbox_id, stat_id, sim_num, firstname, lastname, sms_msg FROM smsoutbox_user_status "
+				query = ("SELECT user_id, mobile_id, outbox_id, stat_id, sim_num, firstname, lastname, sms_msg, send_status FROM smsoutbox_user_status "
 						"INNER JOIN smsoutbox_users USING (outbox_id) "
 						"INNER JOIN user_mobiles USING (mobile_id) "
 						"INNER JOIN mobile_numbers USING (mobile_id) " 
@@ -50,6 +50,28 @@ class DatabaseConnection():
 			except MySQLdb.OperationalError:
 				print("** MySQL Error occurred. Sleeping for 10 seconds.")
 				time.sleep(20)
+
+	def update_send_status(self, stat_id,send_status, ts = None):
+		if not ts:
+			query = ("UPDATE smsoutbox_user_status SET send_status = %d where stat_id = %d ") % (send_status, stat_id)
+		else:
+			query = ("UPDATE smsoutbox_user_status SET send_status = %d, ts_sent = '%s' where stat_id = %d ") % (send_status, ts, stat_id)
+		return self.write_to_db(query=query, last_insert_id=False)
+
+	def insert_inbox_sms(self, sim_num, msg, ts):
+		status = []
+		mobile_id = self.get_user_mobile_id(sim_num)
+		for ids in mobile_id:
+			for id in ids:
+				ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
+				query = ("INSERT INTO smsinbox_users VALUES (0, '%s', '%s', %d, '%s', 0)") % (ts, ts_stored, id, msg)
+				status.append(self.write_to_db(query, last_insert_id=True))
+		return status
+
+	def get_user_mobile_id(self, sim_num):
+		query = "SELECT mobile_id from mobile_numbers WHERE sim_num like '%"+sim_num[:10]+"%'"
+		result = self.read_db(query)
+		return result
 
 	def get_all_logger_mobile(self, sim_num):
 		try:

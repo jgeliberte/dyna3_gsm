@@ -98,7 +98,7 @@ class GsmModem:
                               "from GSM module reset")
                 raise ResetException(except_str)
             elif a.find('ERROR') >= 0:
-                print("Modem: ERROR")
+                print("Error (execute_atcmd): Error executing AT+ Command")
                 return False
             else:
                 return a
@@ -122,7 +122,7 @@ class GsmModem:
             except ValueError as e:
                 print(">> Error: conversion to pdu (cannot decode "
                       "odd-length)")
-                print(">> Error: ", e)
+                print(">> Error (get_all_sms): ", e)
                 continue
             except IndexError:
                 print(">> Error: convertion to pdu (pop from empty array)")
@@ -240,7 +240,7 @@ class GsmModem:
             except (ValueError, AttributeError) as e:
                 print('>> ValueError:')
                 print(b)
-                print("ERROR:", e)
+                print("ERROR (count_sms):", e)
                 print('>> Retryring message reading')
             except TypeError:
                 print(">> TypeError")
@@ -255,7 +255,7 @@ class GsmModem:
         except (ValueError, AttributeError, TypeError) as e:
             raise ResetException
 
-    def delete_sms(self, module):
+    def delete_sms(self, module = 2):
         print("\n>> Deleting all read messages")
         try:
             if module == 1:
@@ -264,8 +264,6 @@ class GsmModem:
                 self.execute_atcmd("AT+CMGDA=1").strip()
             else:
                 raise ValueError("Unknown module type")
-
-            print('OK')
         except ValueError:
             print('>> Error deleting messages')
 

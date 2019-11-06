@@ -9,59 +9,74 @@ import configparser
 from pprint import pprint
 import sys
 
-
 class UserSMS:
-    def __init__(self):
+    def __init__(self, gsm_mod, db, gsm_id):
         print("<< Imported User SMS")
+        self.gsm_mod = gsm_mod
+        self.db = db
+        self.gsm_id = gsm_id
     
-    def start_server(self, gsm_mod, gsm_info, db, gsm_id):
+    def start_server(self):
         print(">> Starting Users SMS server.")
         while(True):
-            sms_count = gsm_mod.count_sms()
+            sms_count = self.gsm_mod.count_sms()
             print(">> Message count(s): ",sms_count)
-            if sms_count <= 0:
-                sms = self.fetch_inbox(gsm_mod)
+            if sms_count > 0:
+                sms = self.fetch_inbox()
                 if len(sms) > 0:
                     print(">> Storing inbox to database.")
+                    for x in sms:
+                        store_status = self.db.insert_inbox_sms(x.simnum, x.data, x.dt )
+                        if not store_status:
+                            print(">> Error occurred. Failed to store SMS Inbox.")
                 else:
                     print(">> No new message.\n\n")
+                self.gsm_mod.delete_sms()
 
-            pending_sms = self.fetch_pending_user_outbox(db, gsm_id)
+            pending_sms = self.fetch_pending_user_outbox()
 
             if len(pending_sms) > 0:
                 print(">> Pending message(s): ",len(pending_sms),"")
-                self.send_pending_sms(pending_sms, gsm_mod)
+                self.send_pending_sms(pending_sms)
             else:
                 print(">> No pending message.\n\n")
     
-    def fetch_inbox(self, gsm_mod):
+    def fetch_inbox(self):
         print("<< Fetching inbox.")
         sms = []
-        sms = gsm_mod.get_all_sms()
+        sms = self.gsm_mod.get_all_sms()
         return sms
 
-    def fetch_pending_user_outbox(self, db, gsm_id):
+    def fetch_pending_user_outbox(self):
         print("<< Fetching outbox.")
-        pending = db.get_all_outbox_sms_users_from_db(5, gsm_id)
+        pending = self.db.get_all_outbox_sms_users_from_db(5, self.gsm_id)
         return pending
     
-    def send_pending_sms(self, sms, gsm_mod):
+    def send_pending_sms(self, sms):
         for (user_id, mobile_id, outbox_id, stat_id,
-         sim_num, firstname, lastname, sms_msg) in sms:
+         sim_num, firstname, lastname, sms_msg, send_status) in sms:
             print("<< Sending SMS to: ", firstname, lastname, " (",sim_num,")")
             print("<< Message: ", sms_msg)
-            stat = gsm_mod.send_sms(sms_msg, sim_num)
-            print(stat)
+            stat = self.gsm_mod.send_sms(sms_msg, sim_num)
             if stat is 0:
                 print(">> SMS ID #:",outbox_id," has successfully sent!")
             else:
-                print(">> Error sending please contact the developer.")
+                print(">> SMS ID #:",outbox_id," failed! Will retry later...")
+            update_status = self.update_outbox_status(stat, outbox_id, stat_id, send_status)
+            if update_status != 1:
+                print(">> Error occurred. Failed to update send status.")
+    
+    def update_outbox_status(self, stat, outbox_id , stat_id, send_status, ts_send = ""):
+        ts_sent = dt.today().strftime("%Y-%m-%d %H:%M:%S")
+        if stat == 0:
+            ret_val = self.db.update_send_status(stat_id , 5, ts_sent)
+        else:
+            if send_status == 4:
+                send_status = send_status + 2
+            else:
+                send_status = send_status + 1
+            ret_val = self.db.update_send_status(stat_id , send_status)
+        return ret_val
 
-            # print(user_id)
-            # print(mobile_id)
-            # print(outbox_id)
-            # print(stat_id)
-            # print(sim_num)
-            # print(firstname)
-            # print(lastname)
-            # print(sms_msg)
+    def delete_inbox_memory(self):
+        print("<< Clearing GSM module inbox memory.")

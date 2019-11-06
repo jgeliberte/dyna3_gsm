@@ -201,9 +201,9 @@ if __name__ == "__main__":
 
 	try:
 		if args.table == "loggers":
-			sms_mode = loggers.LoggerSMS()
+			sms_mode = loggers.LoggerSMS(initialize_gsm_modules, db, args.gsm_id)
 		elif args.table == "users":
-			sms_mode = users.UserSMS()
+			sms_mode = users.UserSMS(initialize_gsm_modules, db, args.gsm_id)
 		else:
 			sms_mode = None
 			print(">> Unknown sms mode. Exiting...")
@@ -212,7 +212,7 @@ if __name__ == "__main__":
 		print(">> ",e," error occurred. Exiting...")
 
 	try:
-		sms_mode.start_server(initialize_gsm_modules, gsm_info, db, args.gsm_id)
+		sms_mode.start_server()
 	except Exception as e:
 		print(">> ",e,"error occurred. Exiting...")
 
