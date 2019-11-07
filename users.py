@@ -24,13 +24,15 @@ class UserSMS:
             if sms_count > 0:
                 sms = self.fetch_inbox()
                 if len(sms) > 0:
-                    print(">> Storing inbox to database.")
+                    print("<< Storing inbox to database.")
                     for x in sms:
                         store_status = self.db.insert_inbox_sms(x.simnum, x.data, x.dt )
                         if not store_status:
-                            print(">> Error occurred. Failed to store SMS Inbox.")
+                            print(">> Unknown mobile number. Storing mobile number for future reference.")
+                            store_number = self.insert_unknown_number(x.simnum, x.data, x.dt)
                 else:
-                    print(">> No new message.\n\n")
+                    print(">> No new message. Sleeping for 10 seconds.\n\n")
+                    time.sleep(10)
                 self.gsm_mod.delete_sms()
 
             pending_sms = self.fetch_pending_user_outbox()
@@ -39,7 +41,8 @@ class UserSMS:
                 print(">> Pending message(s): ",len(pending_sms),"")
                 self.send_pending_sms(pending_sms)
             else:
-                print(">> No pending message.\n\n")
+                print(">> No pending message. Sleeping for 10 seconds.\n\n")
+                time.sleep(10)
     
     def fetch_inbox(self):
         print("<< Fetching inbox.")
@@ -77,6 +80,8 @@ class UserSMS:
                 send_status = send_status + 1
             ret_val = self.db.update_send_status(stat_id , send_status)
         return ret_val
-
-    def delete_inbox_memory(self):
-        print("<< Clearing GSM module inbox memory.")
+    
+    def insert_unknown_number(self, sim_num, msg, ts):
+        print("<< Inserting unknown number.")
+        store_number = self.db.save_unknown_number(sim_num, self.gsm_id)
+        store_status = self.db.insert_inbox_sms(sim_num, msg, ts)

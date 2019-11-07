@@ -64,7 +64,9 @@ class DatabaseConnection():
 		for ids in mobile_id:
 			for id in ids:
 				ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
-				query = ("INSERT INTO smsinbox_users VALUES (0, '%s', '%s', %d, '%s', 0)") % (ts, ts_stored, id, msg)
+				query = ("INSERT INTO smsinbox_users VALUES (0,  " 
+					"'%s','%s', %d,'%s', " 
+					"0)") % (ts, ts_stored, id, msg.replace("'", "\\'"))
 				status.append(self.write_to_db(query, last_insert_id=True))
 		return status
 
@@ -72,6 +74,12 @@ class DatabaseConnection():
 		query = "SELECT mobile_id from mobile_numbers WHERE sim_num like '%"+sim_num[:10]+"%'"
 		result = self.read_db(query)
 		return result
+
+	def save_unknown_number(self, sim_num, gsm_id):
+		query = ("INSERT INTO mobile_numbers VALUES (0, %s, %s)") % (sim_num, gsm_id)
+		mobile_id = self.write_to_db(query, last_insert_id=True)
+		print(">> Mobile ID:", mobile_id)
+		return mobile_id
 
 	def get_all_logger_mobile(self, sim_num):
 		try:
