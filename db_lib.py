@@ -81,11 +81,22 @@ class DatabaseConnection():
 		print(">> Mobile ID:", mobile_id)
 		return mobile_id
 
-	def get_all_logger_mobile(self, sim_num):
+	def insert_logger_inbox_sms(self, sim_num, data, ts, gsm_id):
+		status = []
+		mobile_id = self.get_logger_mobile_id(sim_num)
+		for ids in mobile_id:
+			for id in ids:
+				ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
+				query = ("INSERT INTO smsinbox_loggers (ts_sms, ts_stored, mobile_id, "
+					"sms_msg,read_status, gsm_id) values ('%s','%s',%s,'%s',0,%s)") % (ts, ts_stored, id, data, gsm_id)
+				status.append(self.write_to_db(query, last_insert_id=True))
+		return status
+
+	def get_logger_mobile_id(self, sim_num):
 		try:
 			db, cur = self.db_connect(
 				self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
-			query = ("SELECT * FROM (SELECT "
+			query = ("SELECT mobile_id FROM (SELECT "
 						"t1.mobile_id, t1.sim_num, t1.gsm_id "
 						"FROM "
 						"logger_mobile AS t1 "
@@ -97,7 +108,6 @@ class DatabaseConnection():
 						"WHERE "
 						"t2.sim_num IS NULL "
 						"AND t1.sim_num IS NOT NULL) as logger_mobile WHERE sim_num like '%"+sim_num[:10]+"%'")
-
 			a = cur.execute(query)
 			out = []
 			if a:

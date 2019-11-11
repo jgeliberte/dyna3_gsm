@@ -282,7 +282,7 @@ class GsmModem:
             GPIO.output(self.pow_pin, 0)
             time.sleep(int(self.defaults['GSM_DEFAULT_SETTINGS']['RESET_DEASSERT_DELAY']))
             GPIO.cleanup()
-            print ('done')
+            print ('>> Done')
             sys.exit(0)
         except ImportError:
             return
