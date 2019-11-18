@@ -8,6 +8,7 @@ import re
 import time
 import hashlib
 import psutil
+import utils.error_logger as err_log
 
 class DatabaseCredentials():
 	def __new__(self, host):
@@ -20,9 +21,11 @@ class DatabaseCredentials():
 class DatabaseConnection():
 
 	db_cred = None
+	error_logger = None
 
-	def __init__(self, host):
+	def __init__(self, host, gsm_id):
 		self.db_cred = DatabaseCredentials(host)
+		self.error_logger = err_log.ErrorLogger(gsm_id, 'Database')
 
 	def get_all_outbox_sms_users_from_db(self, send_status, gsm_id):
 		while True:
@@ -83,7 +86,7 @@ class DatabaseConnection():
 
 	def insert_logger_inbox_sms(self, sim_num, data, ts, gsm_id):
 		status = []
-		mobile_id = self.get_logger_mobile_id(sim_num)
+		mobile_id = self.get_logger_mobile_id(sim_num, gsm_id)
 		for ids in mobile_id:
 			for id in ids:
 				ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
@@ -92,7 +95,7 @@ class DatabaseConnection():
 				status.append(self.write_to_db(query, last_insert_id=True))
 		return status
 
-	def get_logger_mobile_id(self, sim_num):
+	def get_logger_mobile_id(self, sim_num, gsm_id):
 		try:
 			db, cur = self.db_connect(
 				self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
@@ -107,7 +110,7 @@ class DatabaseConnection():
 						"AND t1.mobile_id < t2.mobile_id)) "
 						"WHERE "
 						"t2.sim_num IS NULL "
-						"AND t1.sim_num IS NOT NULL) as logger_mobile WHERE sim_num like '%"+sim_num[:10]+"%'")
+						"AND t1.sim_num IS NOT NULL) as logger_mobile WHERE sim_num like '%"+sim_num[:10]+"%' and gsm_id = "+str(gsm_id)+"")
 			a = cur.execute(query)
 			out = []
 			if a:

@@ -8,6 +8,7 @@ from datetime import timedelta as td
 import configparser
 from pprint import pprint
 import sys
+import utils.error_logger as err_log
 
 
 class GsmSms:
@@ -16,6 +17,7 @@ class GsmSms:
         self.simnum = sender
         self.data = data
         self.dt = dt
+        self.error_logger = err_log.ErrorLogger(0, 'Gsm Module')
 
 
 class DefaultSettings:
@@ -74,8 +76,8 @@ class GsmModem:
             print(
                 re.sub(r"[\n\t\s]*", "", self.execute_atcmd('AT+CNMI=2,0,0,0,0').rstrip('\r\n')))
             return True
-        except AttributeError:
-            print("")
+        except AttributeError as err:
+            self.error_logger.store_error_log(self.exception_to_string(err))
             return None
 
     def execute_atcmd(self, cmd="", expected_reply='OK'):
@@ -102,7 +104,8 @@ class GsmModem:
                 return False
             else:
                 return a
-        except serial.SerialException:
+        except serial.SerialException as err:
+            self.error_logger.store_error_log(self.exception_to_string(err))
             print("NO SERIAL COMMUNICATION (gsm_cmd)")
 
     def get_all_sms(self):
@@ -114,17 +117,20 @@ class GsmModem:
         for msg in allmsgs:
             try:
                 pdu = re.search(r'[0-9A-F]{20,}', msg).group(0)
-            except AttributeError:
+            except AttributeError as err:
+                self.error_logger.store_error_log(self.exception_to_string(err))
                 print(">> Error: cannot find pdu text", msg)
                 continue
             try:
                 smsdata = PduDecoder.decodeSmsPdu(pdu)
-            except ValueError as e:
+            except ValueError as err:
                 print(">> Error: conversion to pdu (cannot decode "
                       "odd-length)")
-                print(">> Error (get_all_sms): ", e)
+                print(">> Error (get_all_sms): ", err)
+                self.error_logger.store_error_log(self.exception_to_string(err))
                 continue
-            except IndexError:
+            except IndexError as err:
+                self.error_logger.store_error_log(self.exception_to_string(err))
                 print(">> Error: convertion to pdu (pop from empty array)")
                 continue
 
@@ -132,9 +138,10 @@ class GsmModem:
                 continue
             try:
                 txtnum = re.search(r'(?<= )[0-9]{1,2}(?=,)', msg).group(0)
-            except AttributeError:
+            except AttributeError as err:
                 print(">> Error: message may not have correct "
                       "construction", msg)
+                self.error_logger.store_error_log(self.exception_to_string(err))
                 continue
 
             txtdatetimeStr = smsdata['time']
@@ -171,7 +178,7 @@ class GsmModem:
         try:
             pdulist = PduDecoder.encodeSmsSubmitPdu(number, msg)
         except Exception as e:
-            print(e)
+            self.error_logger.store_error_log(self.exception_to_string(e))
             print("Error in pdu conversion. Skipping message sending")
             return -1
         parts = len(pdulist)
@@ -231,28 +238,31 @@ class GsmModem:
                     print('\n>> Received', c, 'message/s; CSQ:', self.get_csq())
 
                 return c
-            except IndexError:
+            except IndexError as err:
+                self.error_logger.store_error_log(self.exception_to_string(err))
                 print('count_sms b = ', b)
                 if b:
                     return 0
                 else:
                     return -1
-            except (ValueError, AttributeError) as e:
+            except (ValueError, AttributeError) as err:
+                self.error_logger.store_error_log(self.exception_to_string(err))
                 print('>> ValueError:')
                 print(b)
-                print("ERROR (count_sms):", e)
+                print("ERROR (count_sms):", err)
                 print('>> Retryring message reading')
-            except TypeError:
+            except TypeError as err:
+                self.error_logger.store_error_log(self.exception_to_string(err))
                 print(">> TypeError")
                 return -2
 
     def get_csq(self):
         csq_reply = self.execute_atcmd("AT+CSQ")
-
         try:
             csq_val = int(re.search("(?<=: )\d{1,2}(?=,)", csq_reply).group(0))
             return csq_val
-        except (ValueError, AttributeError, TypeError) as e:
+        except (ValueError, AttributeError, TypeError) as err:
+            self.error_logger.store_error_log(self.exception_to_string(err))
             raise ResetException
 
     def delete_sms(self, module = 2):
@@ -264,7 +274,8 @@ class GsmModem:
                 self.execute_atcmd("AT+CMGDA=1").strip()
             else:
                 raise ValueError("Unknown module type")
-        except ValueError:
+        except ValueError as err:
+            self.error_logger.store_error_log(self.exception_to_string(err))
             print('>> Error deleting messages')
 
     def reset(self):
@@ -284,7 +295,8 @@ class GsmModem:
             GPIO.cleanup()
             print ('>> Done')
             sys.exit(0)
-        except ImportError:
+        except ImportError as err:
+            self.error_logger.store_error_log(self.exception_to_string(err))
             return
 
     def formatPDUtoSIM800(self, pdu):
@@ -298,3 +310,8 @@ class GsmModem:
             second = "0"+str(second)
         final = str(first)+str(second)+str(third)+str(fourth)+str(fifth)
         return final
+
+    def exception_to_string(self, excp):
+        stack = traceback.extract_stack()[:-3] + traceback.extract_tb(excp.__traceback__)  # add limit=?? 
+        pretty = traceback.format_list(stack)
+        return ''.join(pretty) + '\n  {} {}'.format(excp.__class__,excp)

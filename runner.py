@@ -13,6 +13,7 @@ import raw_sync_parser as raw_parser
 import loggers
 import users 
 from pprint import pprint
+import utils.error_logger as err_log
 
 
 class GsmServer:
@@ -26,7 +27,6 @@ class GsmServer:
 							help="network name (smart/globe/simulate)")
 		parser.add_argument("-g", "--gsm_id", type=int,
 							help="gsm id (1,2,3...)")
-
 		try:
 			args = parser.parse_args()
 			return args
@@ -45,7 +45,8 @@ if __name__ == "__main__":
 		dbhost = args.dbhost
 	else:
 		dbhost = None
-	db = dbLib.DatabaseConnection(dbhost)
+	error_logger = err_log.ErrorLogger(args.gsm_id, 'Runner')
+	db = dbLib.DatabaseConnection(dbhost, args.gsm_id)
 	gsm_modules = db.get_gsm_info(args.gsm_id)
 	config = configparser.ConfigParser()
 	config.read('/home/pi/updews-pycodes/gsm/gsmserver_dewsl3/utils/config.cnf')

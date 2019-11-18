@@ -8,17 +8,28 @@ from datetime import timedelta as td
 import configparser
 from pprint import pprint
 import sys
+import utils.error_logger as err_log
 
 class UserSMS:
     def __init__(self, gsm_mod, db, gsm_id):
         print("<< Imported User SMS")
+        today = dt.today()
         self.gsm_mod = gsm_mod
         self.db = db
         self.gsm_id = gsm_id
+        self.error_logger = err_log.ErrorLogger(gsm_id, 'User')
+        csq = gsm_mod.get_csq()
+        db.write_csq(gsm_id, today, csq)
+        print(">> CSQ:", csq)
     
     def start_server(self):
         print(">> Starting Users SMS server.")
         while(True):
+            today = dt.today()
+            if (today.minute % 10 == 0):
+                csq = self.gsm_mod.get_csq()
+                self.db.write_csq(self.gsm_id, today, csq)
+                print(">> CSQ:", csq)
             sms_count = self.gsm_mod.count_sms()
             print(">> Message count(s): ",sms_count)
             if sms_count > 0:
