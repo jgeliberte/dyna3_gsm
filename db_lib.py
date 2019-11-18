@@ -50,7 +50,8 @@ class DatabaseConnection():
 					db.close()
 				return out
 
-			except MySQLdb.OperationalError:
+			except MySQLdb.OperationalError as err:
+				self.error_logger.store_error_log(self.exception_to_string(err))
 				print("** MySQL Error occurred. Sleeping for 10 seconds.")
 				time.sleep(20)
 
@@ -118,7 +119,8 @@ class DatabaseConnection():
 				db.close()
 			return out
 
-		except MySQLdb.OperationalError:
+		except MySQLdb.OperationalError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
 			time.sleep(20)
 
 	def get_all_user_mobile(self, sim_num, mobile_id_flag=False):
@@ -137,8 +139,9 @@ class DatabaseConnection():
 				db.close()
 			return out
 
-		except MySQLdb.OperationalError as mysqle:
-			print("MySQLdb OP Error:", mysqle)
+		except MySQLdb.OperationalError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print("MySQLdb OP Error:", err)
 			time.sleep(20)
 
 	def write_inbox(self, msglist='', gsm_info='', csq=0):
@@ -236,10 +239,12 @@ class DatabaseConnection():
 			else:
 				ret_val = a
 
-		except IndexError:
+		except IndexError as err:
 			print("IndexError on ")
 			print(str(inspect.stack()[1][3]))
-		except (MySQLdb.Error, MySQLdb.Warning) as e:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+		except (MySQLdb.Error, MySQLdb.Warning) as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
 			print(">> MySQL error/warning: %s" % e)
 			print("Last calls:")
 			for i in range(1, 6):
@@ -264,8 +269,9 @@ class DatabaseConnection():
 				db.close()
 			return out
 
-		except MySQLdb.OperationalError as mysqle:
-			print("MySQLdb OP Error:", mysqle)
+		except MySQLdb.OperationalError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print("MySQLdb OP Error:", err)
 			time.sleep(20)
 
 	def db_connect(self, schema):
@@ -275,14 +281,17 @@ class DatabaseConnection():
 								 self.db_cred['MASTER_DB_CREDENTIALS']['password'], schema)
 			cur = db.cursor()
 			return db, cur
-		except TypeError:
+		except TypeError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
 			print('Error Connection Value')
 			return False
-		except MySQLdb.OperationalError as mysqle:
-			print("MySQL Operationial Error:", mysqle)
+		except MySQLdb.OperationalError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print("MySQL Operationial Error:", err)
 			return False
-		except (MySQLdb.Error, MySQLdb.Warning) as e:
-			print("MySQL Error:", e)
+		except (MySQLdb.Error, MySQLdb.Warning) as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print("MySQL Error:", err)
 			return False
 
 	def update_sent_status(self, table='', status_list='', resource="sms_data"):
@@ -346,8 +355,9 @@ class DatabaseConnection():
 			tsw = dt.today().strftime("%Y-%m-%d %H:%M:%S")
 			try:
 				query += "(%s, %s, %s)," % (outbox_id, recipient[0], recipient[2])
-			except KeyError:
-				print (">> Error: Possible key error for", r)
+			except KeyError as err:
+				self.error_logger.store_error_log(self.exception_to_string(err))
+				print (">> Error: Possible key error for", err)
 				continue
 		query = query[:-1]
 		self.write_to_db(query=query, last_insert_id=False)
@@ -377,7 +387,8 @@ class DatabaseConnection():
 					out = cur.fetchall()
 				return out
 
-			except MySQLdb.OperationalError:
+			except MySQLdb.OperationalError as err:
+				self.error_logger.store_error_log(self.exception_to_string(err))
 				print ('9.',)
 				time.sleep(20)
 
@@ -411,8 +422,9 @@ class DatabaseConnection():
 			
 			db.close()
 			return result
-		except MySQLdb.OperationalError as mysqle:
-			print("MySQLdb OP Error:", mysqle)
+		except MySQLdb.OperationalError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print("MySQLdb OP Error:", err)
 			time.sleep(20)
 
 	def insertNewAccountCBEWS(self, msg):
@@ -440,8 +452,9 @@ class DatabaseConnection():
 				delete_pending_account_query = "DELETE FROM pending_accounts WHERE pending_account_id = '"+str(user[0])+"'"
 				delete_pending_account = self.execute_commons_db(delete_pending_account_query)
 				status = True
-		except Exception as e:
-			print(e)
+		except Exception as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print(err)
 		finally:
 			return status,id
 	
@@ -477,8 +490,9 @@ class DatabaseConnection():
 				db.close()
 			return out
 
-		except MySQLdb.OperationalError as mysqle:
-			print("MySQLdb OP Error:", mysqle)
+		except MySQLdb.OperationalError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print("MySQLdb OP Error:", err)
 			time.sleep(20)
 	
 	def execute_syncing(self, table_reference = '', data=[]):
@@ -555,27 +569,6 @@ class DatabaseConnection():
 		status = self.execute_commons_db(query, True)
 		return status
 
-	# def write_inbox(self, msglist='', gsm_info=''):
-	# 	if not msglist:
-	# 		raise ValueError("No msglist definition")
-
-	# 	if not gsm_info:
-	# 		raise ValueError("No gsm_info definition")
-
-	# 	ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
-
-	# 	gsm_id = gsm_info['id']
-
-
-	# 	sms_id_ok = []
-	# 	sms_id_unk = []
-	# 	ts_sms = 0
-
-	# 	for msg in msglist:
-	# 		ts_sms = msg.dt
-	# 		sms_msg = msg.data
-	# 		query_users = self.write_raw_data(msg, gsm_id, ts_sms, ts_stored, sms_msg)
-
 	def write_raw_data(self, msg, gsm_id, ts_sms, ts_stored, sms_msg):
 		users_count = 0
 		query_raw = ("insert into raw_data_received (raw_data, ts_received, ts_stored, mobile_id, parsed) values ")
@@ -611,11 +604,13 @@ class DatabaseConnection():
 			else:
 				ret_val = a
 
-		except IndexError:
+		except IndexError as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
 			print("IndexError on ")
 			print(str(inspect.stack()[1][3]))
-		except (MySQLdb.Error, MySQLdb.Warning) as e:
-			print(">> MySQL error/warning: %s" % e)
+		except (MySQLdb.Error, MySQLdb.Warning) as err:
+			self.error_logger.store_error_log(self.exception_to_string(err))
+			print(">> MySQL error/warning: %s" % err)
 			print("Last calls:")
 			for i in range(1, 6):
 				try:
@@ -646,3 +641,8 @@ class DatabaseConnection():
 			return result
 		else:
 			return False
+
+	def exception_to_string(self, excp):
+        stack = traceback.extract_stack()[:-3] + traceback.extract_tb(excp.__traceback__)  # add limit=?? 
+        pretty = traceback.format_list(stack)
+        return ''.join(pretty) + '\n  {} {}'.format(excp.__class__,excp)
