@@ -9,6 +9,7 @@ import configparser
 from pprint import pprint
 import sys
 import utils.error_logger as err_log
+import traceback
 
 class UserSMS:
     def __init__(self, gsm_mod, db, gsm_id):
