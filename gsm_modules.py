@@ -17,8 +17,6 @@ class GsmSms:
         self.simnum = sender
         self.data = data
         self.dt = dt
-        self.error_logger = err_log.ErrorLogger(0, 'Gsm Module')
-
 
 class DefaultSettings:
     def __new__(self):
