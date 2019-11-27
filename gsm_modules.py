@@ -45,6 +45,7 @@ class GsmModem:
         GPIO.setup(ring_pin, GPIO.IN)
         self.pow_pin = pow_pin
         self.ring_pin = ring_pin
+        self.error_logger = err_log.ErrorLogger(0, 'Gsm Module')
 
     def initialize_serial(self):
         print('Connecting to GSM modem at', self.ser_port)

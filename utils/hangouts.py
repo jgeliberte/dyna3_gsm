@@ -1,17 +1,26 @@
 import asyncio 
 import hangups
+import os
+import sys
 
 class HangoutNotification():
     def __init__(self):
         self.CONVERSATION_ID = 'UgxZCrnfpmv93IhqKIZ4AaABAQ'
         self.REFRESH_TOKEN_PATH = '/home/pi/.cache/hangups/refresh_token.txt'
+        try:
+            self.cookies = hangups.auth.get_auth_stdin(self.REFRESH_TOKEN_PATH)
+            self.client = hangups.Client(self.cookies)
+        except Exception as err:
+            print("--------------------")
+            print(">> Network Error.")
+            print(">> Script Exiting...")
+            print("--------------------")
+            sys.exit(0)
 
     def send_notification(self, message):
-        cookies = hangups.auth.get_auth_stdin(self.REFRESH_TOKEN_PATH)
-        client = hangups.Client(cookies)
-        client.on_connect.add_observer(lambda: asyncio.async(self.send_message(client, message)))
+        self.client.on_connect.add_observer(lambda: asyncio.async(self.send_message(self.client, message)))
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(client.connect())
+        loop.run_until_complete(self.client.connect())
 
     @asyncio.coroutine
     def send_message(self, client, message):
@@ -27,7 +36,6 @@ class HangoutNotification():
                 segment=[hangups.ChatMessageSegment(message).serialize()],
             ),
         )
-    
         try:
             yield from client.send_chat_message(request)
         finally:
