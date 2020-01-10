@@ -15,6 +15,7 @@ class HangoutNotification():
             print(">> Network Error.")
             print(">> Script Exiting...")
             print("--------------------")
+            sys.exit(0)
 
     def send_notification(self, message):
         self.client.on_connect.add_observer(lambda: asyncio.async(self.send_message(self.client, message)))

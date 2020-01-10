@@ -26,7 +26,6 @@ class WatchDog():
         status = os.system(screen)
         if (status != 0):
             test = "screen -dmS g"+str(gsm_id)+" /usr/bin/python3.5 /home/pi/dyna3_gsm/runner.py -t "+str(gsm_id[2:]).lower()+" -db 192.168.150.253 -g"+str(gsm_id[:2])
-            print(test)
             os.system(test)
             sys.exit(0)
 
