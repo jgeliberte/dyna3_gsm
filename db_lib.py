@@ -14,7 +14,7 @@ import traceback
 class DatabaseCredentials():
 	def __new__(self, host):
 		config = configparser.ConfigParser()
-		config.read('/home/pi/updews-pycodes/gsm/gsmserver_dewsl3/utils/config.cnf')
+		config.read('/home/pi/dyna3_gsm/utils/config.cnf')
 		if host is not None:
 			config["MASTER_DB_CREDENTIALS"]["host"] = host
 		return config
@@ -33,11 +33,11 @@ class DatabaseConnection():
 			try:
 				db, cur = self.db_connect(
 					self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
-				query = ("SELECT user_id, mobile_id, outbox_id, stat_id, sim_num, firstname, lastname, sms_msg, send_status FROM smsoutbox_user_status "
+				query = ("SELECT mobile_id, outbox_id, stat_id, sim_num, sms_msg, send_status FROM smsoutbox_user_status "
 						"INNER JOIN smsoutbox_users USING (outbox_id) "
 						"INNER JOIN user_mobiles USING (mobile_id) "
 						"INNER JOIN mobile_numbers USING (mobile_id) " 
-						"INNER JOIN users USING (user_id) WHERE "
+						"WHERE "
 						"send_status < %d "
 						"AND send_status >= 0 "
 						"AND send_status < 6 "
@@ -80,10 +80,19 @@ class DatabaseConnection():
 		return result
 
 	def save_unknown_number(self, sim_num, gsm_id):
-		query = ("INSERT INTO mobile_numbers VALUES (0, %s, %s)") % (sim_num, gsm_id)
+		prefix_details = self.get_gsm_id_prefix(sim_num)
+		query = ("INSERT INTO mobile_numbers VALUES (0, %s, %s)") % (sim_num, prefix_details[0][1])
 		mobile_id = self.write_to_db(query, last_insert_id=True)
 		print(">> Mobile ID:", mobile_id)
+		print(">> Network Carrier:", prefix_details[0][0])
 		return mobile_id
+
+	def get_gsm_id_prefix(self, sim_num):
+		trimmed = sim_num[-10:]
+		prefix = trimmed[:3]
+		query = f"SELECT carrier, gsm_id FROM sim_prefixes INNER JOIN network_carriers USING (network_id) WHERE prefix = '{prefix}'"
+		result = self.read_db(query)
+		return result
 
 	def insert_logger_inbox_sms(self, sim_num, data, ts, gsm_id):
 		status = []

@@ -55,6 +55,7 @@ class UserSMS:
             else:
                 print(">> No pending message. Sleeping for 10 seconds.\n\n")
                 time.sleep(10)
+            print(">> Current timestamp: ", dt.today())
     
     def fetch_inbox(self):
         print("<< Fetching inbox.")
@@ -68,9 +69,9 @@ class UserSMS:
         return pending
     
     def send_pending_sms(self, sms):
-        for (user_id, mobile_id, outbox_id, stat_id,
-         sim_num, firstname, lastname, sms_msg, send_status) in sms:
-            print("<< Sending SMS to: ", firstname, lastname, " (",sim_num,")")
+        for (mobile_id, outbox_id, stat_id,
+         sim_num, sms_msg, send_status) in sms:
+            print("<< Sending SMS to:  (",sim_num,")")
             print("<< Message: ", sms_msg)
             stat = self.gsm_mod.send_sms(sms_msg, sim_num)
             if stat is 0:

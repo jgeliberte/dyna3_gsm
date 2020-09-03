@@ -5,11 +5,9 @@ import re
 import sys
 import configparser
 from datetime import datetime as dt
-import memcache
 import argparse
 import gsm_modules as modem
 import db_lib as dbLib
-import raw_sync_parser as raw_parser
 import loggers
 import users 
 from pprint import pprint
@@ -51,7 +49,7 @@ if __name__ == "__main__":
 	db = dbLib.DatabaseConnection(dbhost, args.gsm_id)
 	gsm_modules = db.get_gsm_info(args.gsm_id)
 	config = configparser.ConfigParser()
-	config.read('/home/pi/updews-pycodes/gsm/gsmserver_dewsl3/utils/config.cnf')
+	config.read('/home/pi/dyna3_gsm/utils/config.cnf')
 
 	if args.gsm_id not in gsm_modules.keys():
 		print(">> Error in gsm module selection (", args.gsm_id, ")")

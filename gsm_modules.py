@@ -22,8 +22,8 @@ class GsmSms:
 class DefaultSettings:
     def __new__(self):
         config = configparser.ConfigParser()
-        config.read('/home/pi/updews-pycodes/gsm/gsmserver_dewsl3/utils/config.cnf')
-        config["CBEWSL_DB_CREDENTIALS"]
+        config.read('/home/pi/dyna3_gsm/utils/config.cnf')
+        config["MASTER_DB_CREDENTIALS"]
         return config
 
 class ResetException(Exception):
@@ -157,7 +157,7 @@ class GsmModem:
                             str(smsdata['text']), txtdatetimeStr)
                         msglist.append(smsItem)
                 else:
-                    smsdata['text'] = smsdata['text']
+                    smsdata['text'] = smsdata['text'].encode('utf-16','surrogatepass').decode('utf-16')
                     smsItem = GsmSms(txtnum, smsdata['number'].strip('+'),
                                      str(smsdata['text']), txtdatetimeStr)
                     msglist.append(smsItem)
