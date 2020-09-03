@@ -10,11 +10,11 @@ RESET_DEASSERT_DELAY = 2
 POWER_RESET_DELAY = 15
 
 [MASTER_DB_CREDENTIALS]
-host = 192.168.1.10
-user = root
-password = senslope
+host = 192.168.150.112
+user = pysys_local
+password = NaCAhztBgYZ3HwTkvHwwGVtJn5sVMFgg
 db_comms = comms_db
-db_senslope = senslopedb
+db_senslope = analysis_db
 db_commons = commons_db
 
 [SLAVE_READ_DB_CREDENTIALS]
@@ -42,4 +42,4 @@ db_senslope = senslopedb
 db_commons = commons_db
 
 [CENTRAL_SERVER_NUMBER]
-number = ['639175048863']
+number = ['639296770375']

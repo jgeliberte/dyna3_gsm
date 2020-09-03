@@ -13,7 +13,8 @@ class HangoutNotification():
         except Exception as err:
             print("--------------------")
             print(">> Network Error.")
-            print(">> Script Exiting...")
+            print(">> Script Exiting.")
+            print(f">> ERR: {err}")
             print("--------------------")
             sys.exit(0)
 

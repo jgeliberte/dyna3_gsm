@@ -65,13 +65,22 @@ class DatabaseConnection():
 	def insert_inbox_sms(self, sim_num, msg, ts):
 		status = []
 		mobile_id = self.get_user_mobile_id(sim_num)
-		for ids in mobile_id:
-			for id in ids:
-				ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
-				query = ("INSERT INTO smsinbox_users VALUES (0,  " 
-					"'%s','%s', %d,'%s', " 
-					"0)") % (ts, ts_stored, id, msg.replace("'", "\\'"))
-				status.append(self.write_to_db(query, last_insert_id=True))
+		if not mobile_id:
+			print(">> Logger Data... Processing...")
+			logger_id = self.get_logger_mobile_id(sim_num)
+			for ids in logger_id:
+					ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
+					query = ("INSERT INTO smsinbox_loggers (ts_sms, ts_stored, mobile_id, "
+						"sms_msg,read_status, gsm_id) values ('%s','%s',%s,'%s',0,%s)") % (ts, ts_stored, ids[0], msg, ids[1])
+					status.append(self.write_to_db(query, last_insert_id=True))
+		else:
+			for ids in mobile_id:
+				for id in ids:
+					ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
+					query = ("INSERT INTO smsinbox_users VALUES (0,  " 
+						"'%s','%s', %d,'%s', " 
+						"0)") % (ts, ts_stored, id, msg.replace("'", "\\'"))
+					status.append(self.write_to_db(query, last_insert_id=True))
 		return status
 
 	def get_user_mobile_id(self, sim_num):
@@ -96,20 +105,20 @@ class DatabaseConnection():
 
 	def insert_logger_inbox_sms(self, sim_num, data, ts, gsm_id):
 		status = []
-		mobile_id = self.get_logger_mobile_id(sim_num, gsm_id)
+		mobile_id = self.get_logger_mobile_id(sim_num)
 		for ids in mobile_id:
 			for id in ids:
 				ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
 				query = ("INSERT INTO smsinbox_loggers (ts_sms, ts_stored, mobile_id, "
-					"sms_msg,read_status, gsm_id) values ('%s','%s',%s,'%s',0,%s)") % (ts, ts_stored, id, data, gsm_id)
+					"sms_msg,read_status, gsm_id) values ('%s','%s',%s,'%s',0,%s)") % (ts, ts_stored, id[0], data, id[1])
 				status.append(self.write_to_db(query, last_insert_id=True))
 		return status
 
-	def get_logger_mobile_id(self, sim_num, gsm_id):
+	def get_logger_mobile_id(self, sim_num):
 		try:
 			db, cur = self.db_connect(
 				self.db_cred['MASTER_DB_CREDENTIALS']['db_comms'])
-			query = ("SELECT mobile_id FROM (SELECT "
+			query = ("SELECT mobile_id, gsm_id FROM (SELECT "
 						"t1.mobile_id, t1.sim_num, t1.gsm_id "
 						"FROM "
 						"logger_mobile AS t1 "
@@ -120,7 +129,7 @@ class DatabaseConnection():
 						"AND t1.mobile_id < t2.mobile_id)) "
 						"WHERE "
 						"t2.sim_num IS NULL "
-						"AND t1.sim_num IS NOT NULL) as logger_mobile WHERE sim_num like '%"+sim_num[:10]+"%' and gsm_id = "+str(gsm_id)+"")
+						"AND t1.sim_num IS NOT NULL) as logger_mobile WHERE sim_num like '%"+sim_num[-10:]+"%'")
 			a = cur.execute(query)
 			out = []
 			if a:
