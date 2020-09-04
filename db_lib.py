@@ -103,15 +103,14 @@ class DatabaseConnection():
 		result = self.read_db(query)
 		return result
 
-	def insert_logger_inbox_sms(self, sim_num, data, ts, gsm_id):
+	def insert_logger_inbox_sms(self, sim_num, data, ts):
 		status = []
 		mobile_id = self.get_logger_mobile_id(sim_num)
-		for ids in mobile_id:
-			for id in ids:
-				ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
-				query = ("INSERT INTO smsinbox_loggers (ts_sms, ts_stored, mobile_id, "
-					"sms_msg,read_status, gsm_id) values ('%s','%s',%s,'%s',0,%s)") % (ts, ts_stored, id[0], data, id[1])
-				status.append(self.write_to_db(query, last_insert_id=True))
+		for id in mobile_id:
+			ts_stored = dt.today().strftime("%Y-%m-%d %H:%M:%S")
+			query = ("INSERT INTO smsinbox_loggers (ts_sms, ts_stored, mobile_id, "
+				"sms_msg,read_status, gsm_id) values ('%s','%s',%s,'%s',0,%s)") % (ts, ts_stored, id[0], data, id[1])
+			status.append(self.write_to_db(query, last_insert_id=True))
 		return status
 
 	def get_logger_mobile_id(self, sim_num):

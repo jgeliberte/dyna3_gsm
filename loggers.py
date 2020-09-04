@@ -39,7 +39,7 @@ class LoggerSMS:
                     sms = self.fetch_logger_inbox()
                     if len(sms) > 0:
                         for x in sms:
-                            store_status = self.db.insert_logger_inbox_sms(x.simnum, x.data, x.dt, self.gsm_id )
+                            store_status = self.db.insert_logger_inbox_sms(x.simnum, x.data, x.dt)
                             if not store_status:
                                 print(">> Unknown mobile number. Ignoring.")
                             else:
