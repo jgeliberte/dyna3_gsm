@@ -41,7 +41,7 @@ class GsmModem:
         GPIO.setwarnings(False)
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(pow_pin, GPIO.OUT)
-        GPIO.output(pow_pin, 0)
+        GPIO.output(pow_pin, 1)
         GPIO.setup(ring_pin, GPIO.IN)
         self.pow_pin = pow_pin
         self.ring_pin = ring_pin
@@ -60,7 +60,7 @@ class GsmModem:
         return gsm
 
     def set_gsm_defaults(self):
-        GPIO.output(self.pow_pin, 0)
+        GPIO.output(self.pow_pin, 1)
         time.sleep(
             int(self.defaults['GSM_DEFAULT_SETTINGS']['POWER_ON_DELAY']))
         try:
